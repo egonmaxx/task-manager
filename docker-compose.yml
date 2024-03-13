@@ -1,0 +1,66 @@
+version: '3.5'
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: laravel_backend_web
+    ports:
+      - "15080:80"
+    depends_on:
+      - db
+      - phpmyadmin
+    volumes:
+      - ./:/app
+    environment:
+      - HTTPD_MAIN_SERVERNAME=http://localhost:8080
+      - HTTPD_FRONTEND_DOMAIN=https://localhost:3000
+      - SMTP_SERVER=laravel_backend_mailhog
+      - SMTP_PORT=1025
+    networks:
+      - laravel-net
+  db:
+    image: mysql:8.0
+    container_name: laravel_backend_db
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: root
+    command: [ 'mysqld', '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', '--innodb-strict-mode=true' ]
+    volumes:
+      - ./database-volume:/var/lib/mysql
+    ports:
+    - "15306:3306"
+    networks:
+      - laravel-net
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: laravel_backend_pma
+    ports:
+      - "15081:80"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    networks:
+      - laravel-net
+  mailhog:
+    image: mailhog/mailhog
+    container_name: laravel_backend_mailhog
+    ports:
+      - "15025:1025"
+      - "15025:8025"
+    networks:
+      - laravel-net
+  redis:
+    container_name: laravel_backend_redis
+    image: redis:6.0.8
+    ports:
+      - "15382:6379"
+    networks:
+      - laravel-net
+networks:
+  laravel-net:
+    name: "laravel-net"
+    ipam:
+      driver: default
+      config:
+      - subnet: "172.90.0.0/16"
